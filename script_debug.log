@@ -1,0 +1,15 @@
++ unset ASSISTANT_NAME
++ cd /home/anieshchawla/nanoclaw-main
++ '[' -f /home/anieshchawla/nanoclaw-main/nanoclaw.pid ']'
+++ cat /home/anieshchawla/nanoclaw-main/nanoclaw.pid
++ OLD_PID=13120
++ '[' -n 13120 ']'
++ kill -0 13120
++ echo 'Starting NanoClaw...'
+Starting NanoClaw...
++ echo 13147
++ nohup /usr/local/nvm/versions/node/v24.13.1/bin/node /home/anieshchawla/nanoclaw-main/dist/index.js
++ echo 'NanoClaw started (PID 13147)'
+NanoClaw started (PID 13147)
++ echo 'Logs: tail -f /home/anieshchawla/nanoclaw-main/logs/nanoclaw.log'
+Logs: tail -f /home/anieshchawla/nanoclaw-main/logs/nanoclaw.log

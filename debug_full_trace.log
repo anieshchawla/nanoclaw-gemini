@@ -1,0 +1,71 @@
+[16:23:01.003] [32mINFO[39m (11729): [36mDatabase initialized[39m
+[16:23:01.004] [32mINFO[39m (11729): [36mState loaded[39m
+    [35mgroupCount[39m: 4
+[16:23:01.206] [32mINFO[39m (11729): [36mconnected to WA[39m
+    [35mbrowser[39m: [
+      "Mac OS",
+      "Chrome",
+      "14.4.1"
+    ]
+    [35mhelloMsg[39m: {
+      "clientHello": {
+        "ephemeral": "nPckgSuoY4oaWBLEoUM24Tf/myxiT7ZhUWRIGGBesVE="
+      }
+    }
+[16:23:01.236] [32mINFO[39m (11729): [36mlogging in...[39m
+    [35mnode[39m: {
+      "username": "13125200435",
+      "passive": true,
+      "userAgent": {
+        "platform": "WEB",
+        "appVersion": {
+          "primary": 2,
+          "secondary": 3000,
+          "tertiary": 1033846690
+        },
+        "mcc": "000",
+        "mnc": "000",
+        "osVersion": "0.1",
+        "device": "Desktop",
+        "osBuildNumber": "0.1",
+        "releaseChannel": "RELEASE",
+        "localeLanguageIso6391": "en",
+        "localeCountryIso31661Alpha2": "US"
+      },
+      "webInfo": {
+        "webSubPlatform": "WEB_BROWSER"
+      },
+      "connectType": "WIFI_UNKNOWN",
+      "connectReason": "USER_ACTIVATED",
+      "device": 32,
+      "pull": true,
+      "lidDbMigrated": false
+    }
+[16:23:01.549] [32mINFO[39m (11729): [36m696 pre-keys found on server[39m
+[16:23:01.549] [32mINFO[39m (11729): [36mCurrent prekey ID: 828, exists in storage: true[39m
+[16:23:01.549] [32mINFO[39m (11729): [36mPreKey validation passed - Server: 696, Current prekey 828 exists[39m
+[16:23:01.670] [32mINFO[39m (11729): [36mopened connection to WA[39m
+[16:23:01.674] [32mINFO[39m (11729): [36mConnected to WhatsApp[39m
+[16:23:01.676] [32mINFO[39m (11729): [36mScheduler loop started[39m
+[16:23:01.677] [32mINFO[39m (11729): [36mIPC watcher started (per-group namespaces)[39m
+[16:23:01.677] [32mINFO[39m (11729): [36mRecovery: found unprocessed messages[39m
+    [35mgroup[39m: "Mini Boss"
+    [35mpendingCount[39m: 1
+[16:23:01.679] [32mINFO[39m (11729): [36mNanoClaw running (trigger: @Prof)[39m
+[16:23:01.685] [32mINFO[39m (11729): [36mOwn LID session created successfully[39m
+    [35mmyPN[39m: "13125200435:32@s.whatsapp.net"
+    [35mmyLID[39m: "173735772483835:32@lid"
+[16:23:01.687] [32mINFO[39m (11729): [36mhandled 0 offline messages/notifications[39m
+[16:23:01.688] [32mINFO[39m (11729): [36mConnection is now AwaitingInitialSync, buffering events[39m
+[16:23:01.688] [32mINFO[39m (11729): [36mHistory sync is enabled, awaiting notification with a 20s timeout.[39m
+[16:23:15.137] [32mINFO[39m (11729): [36mShutdown signal received[39m
+    [35msignal[39m: "SIGTERM"
+[16:23:15.137] [32mINFO[39m (11729): [36mGroupQueue shutting down (containers detached, not killed)[39m
+    [35mactiveCount[39m: 0
+    [35mdetachedContainers[39m: []
+[16:23:15.137] [32mINFO[39m (11729): [36mconnection closed[39m
+[16:23:15.138] [32mINFO[39m (11729): [36mConnection closed[39m
+    [35mshouldReconnect[39m: true
+    [35mqueuedMessages[39m: 0
+[16:23:15.138] [32mINFO[39m (11729): [36mReconnecting...[39m
+Exit code: 124

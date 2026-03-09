@@ -1,0 +1,95 @@
+
+> nanoclaw@1.1.0 dev
+> tsx src/index.ts
+
+[16:35:19.395] [32mINFO[39m (12292): [36mDatabase initialized[39m
+[16:35:19.397] [32mINFO[39m (12292): [36mState loaded[39m
+    [35mgroupCount[39m: 4
+[16:35:19.759] [32mINFO[39m (12292): [36mconnected to WA[39m
+    [35mbrowser[39m: [
+      "Mac OS",
+      "Chrome",
+      "14.4.1"
+    ]
+    [35mhelloMsg[39m: {
+      "clientHello": {
+        "ephemeral": "70lewcObLD6PPvpK1xUkmEDcxYgEQGsGZQDm69id1ww="
+      }
+    }
+[16:35:19.933] [32mINFO[39m (12292): [36mlogging in...[39m
+    [35mnode[39m: {
+      "username": "13125200435",
+      "passive": true,
+      "userAgent": {
+        "platform": "WEB",
+        "appVersion": {
+          "primary": 2,
+          "secondary": 3000,
+          "tertiary": 1033846690
+        },
+        "mcc": "000",
+        "mnc": "000",
+        "osVersion": "0.1",
+        "device": "Desktop",
+        "osBuildNumber": "0.1",
+        "releaseChannel": "RELEASE",
+        "localeLanguageIso6391": "en",
+        "localeCountryIso31661Alpha2": "US"
+      },
+      "webInfo": {
+        "webSubPlatform": "WEB_BROWSER"
+      },
+      "connectType": "WIFI_UNKNOWN",
+      "connectReason": "USER_ACTIVATED",
+      "device": 32,
+      "pull": true,
+      "lidDbMigrated": false
+    }
+[16:35:20.572] [32mINFO[39m (12292): [36m696 pre-keys found on server[39m
+[16:35:20.572] [32mINFO[39m (12292): [36mCurrent prekey ID: 828, exists in storage: true[39m
+[16:35:20.572] [32mINFO[39m (12292): [36mPreKey validation passed - Server: 696, Current prekey 828 exists[39m
+[16:35:20.878] [32mINFO[39m (12292): [36moffline preview received[39m
+[16:35:21.019] [32mINFO[39m (12292): [36mopened connection to WA[39m
+[16:35:21.026] [32mINFO[39m (12292): [36mConnected to WhatsApp[39m
+[16:35:21.029] [32mINFO[39m (12292): [36mScheduler loop started[39m
+[16:35:21.030] [32mINFO[39m (12292): [36mIPC watcher started (per-group namespaces)[39m
+[16:35:21.031] [32mINFO[39m (12292): [36mRecovery: found unprocessed messages[39m
+    [35mgroup[39m: "Mini Boss"
+    [35mpendingCount[39m: 1
+[16:35:21.033] [32mINFO[39m (12292): [36mNanoClaw running (trigger: @Prof)[39m
+[16:35:21.038] [32mINFO[39m (12292): [36mhandled 8 offline messages/notifications[39m
+[16:35:21.039] [32mINFO[39m (12292): [36mConnection is now AwaitingInitialSync, buffering events[39m
+[16:35:21.040] [32mINFO[39m (12292): [36mHistory sync is enabled, awaiting notification with a 20s timeout.[39m
+[16:35:21.040] [32mINFO[39m (12292): [36mTranslated LID to phone JID (signalRepository)[39m
+    [35mlidJid[39m: "76824163950724@lid"
+    [35mphoneJid[39m: "447905272923@s.whatsapp.net"
+[16:35:21.040] [32mINFO[39m (12292): [36mIncoming message[39m
+    [35mrawJid[39m: "76824163950724@lid"
+    [35mchatJid[39m: "447905272923@s.whatsapp.net"
+    [35mcontent[39m: true
+    [35mkeys[39m: [
+      "conversation"
+    ]
+[16:35:21.051] [32mINFO[39m (12292): [36mIncoming message[39m
+    [35mrawJid[39m: "76824163950724@lid"
+    [35mchatJid[39m: "447905272923@s.whatsapp.net"
+    [35mcontent[39m: true
+    [35mkeys[39m: [
+      "conversation"
+    ]
+[16:35:21.066] [32mINFO[39m (12292): [36mOwn LID session created successfully[39m
+    [35mmyPN[39m: "13125200435:32@s.whatsapp.net"
+    [35mmyLID[39m: "173735772483835:32@lid"
+[16:35:24.400] [32mINFO[39m (12292): [36mKeep-alive ping[39m
+[16:35:29.399] [32mINFO[39m (12292): [36mKeep-alive ping[39m
+[16:35:34.400] [32mINFO[39m (12292): [36mKeep-alive ping[39m
+[16:35:38.386] [32mINFO[39m (12292): [36mShutdown signal received[39m
+    [35msignal[39m: "SIGTERM"
+[16:35:38.387] [32mINFO[39m (12292): [36mGroupQueue shutting down (containers detached, not killed)[39m
+    [35mactiveCount[39m: 0
+    [35mdetachedContainers[39m: []
+[16:35:38.387] [32mINFO[39m (12292): [36mconnection closed[39m
+[16:35:38.389] [32mINFO[39m (12292): [36mConnection closed[39m
+    [35mshouldReconnect[39m: true
+    [35mqueuedMessages[39m: 0
+[16:35:38.389] [32mINFO[39m (12292): [36mReconnecting...[39m

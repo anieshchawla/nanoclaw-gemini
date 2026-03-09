@@ -1,0 +1,122 @@
+[16:04:20.290] [32mINFO[39m (3292): [36mDatabase initialized[39m
+[16:04:20.291] [32mINFO[39m (3292): [36mState loaded[39m
+    [35mgroupCount[39m: 4
+[16:04:20.609] [32mINFO[39m (3292): [36mconnected to WA[39m
+    [35mbrowser[39m: [
+      "Mac OS",
+      "Chrome",
+      "14.4.1"
+    ]
+    [35mhelloMsg[39m: {
+      "clientHello": {
+        "ephemeral": "7Q5pIKctoRbEwxtjLYmpudqOCz7BhtAFUwFYv1H1BzQ="
+      }
+    }
+[16:04:20.779] [32mINFO[39m (3292): [36mlogging in...[39m
+    [35mnode[39m: {
+      "username": "13125200435",
+      "passive": true,
+      "userAgent": {
+        "platform": "WEB",
+        "appVersion": {
+          "primary": 2,
+          "secondary": 3000,
+          "tertiary": 1033846690
+        },
+        "mcc": "000",
+        "mnc": "000",
+        "osVersion": "0.1",
+        "device": "Desktop",
+        "osBuildNumber": "0.1",
+        "releaseChannel": "RELEASE",
+        "localeLanguageIso6391": "en",
+        "localeCountryIso31661Alpha2": "US"
+      },
+      "webInfo": {
+        "webSubPlatform": "WEB_BROWSER"
+      },
+      "connectType": "WIFI_UNKNOWN",
+      "connectReason": "USER_ACTIVATED",
+      "device": 32,
+      "pull": true,
+      "lidDbMigrated": false
+    }
+[16:04:21.407] [32mINFO[39m (3292): [36m696 pre-keys found on server[39m
+[16:04:21.407] [32mINFO[39m (3292): [36mCurrent prekey ID: 828, exists in storage: true[39m
+[16:04:21.407] [32mINFO[39m (3292): [36mPreKey validation passed - Server: 696, Current prekey 828 exists[39m
+[16:04:21.726] [32mINFO[39m (3292): [36mhandled 0 offline messages/notifications[39m
+[16:04:21.727] [32mINFO[39m (3292): [36mConnection is now AwaitingInitialSync, buffering events[39m
+[16:04:21.727] [32mINFO[39m (3292): [36mHistory sync is enabled, awaiting notification with a 20s timeout.[39m
+[16:04:21.878] [32mINFO[39m (3292): [36mopened connection to WA[39m
+[16:04:21.881] [32mINFO[39m (3292): [36mConnected to WhatsApp[39m
+[16:04:21.883] [32mINFO[39m (3292): [36mScheduler loop started[39m
+[16:04:21.884] [32mINFO[39m (3292): [36mIPC watcher started (per-group namespaces)[39m
+[16:04:21.884] [32mINFO[39m (3292): [36mRecovery: found unprocessed messages[39m
+    [35mgroup[39m: "main"
+    [35mpendingCount[39m: 1
+[16:04:21.908] [32mINFO[39m (3292): [36mProcessing messages[39m
+    [35mgroup[39m: "main"
+    [35mmessageCount[39m: 1
+[16:04:21.909] [32mINFO[39m (3292): [36mRecovery: found unprocessed messages[39m
+    [35mgroup[39m: "Mini Boss"
+    [35mpendingCount[39m: 1
+[16:04:21.910] [32mINFO[39m (3292): [36mNanoClaw running (trigger: @Prof)[39m
+[16:04:21.916] [32mINFO[39m (3292): [36mSpawning container agent[39m
+    [35mgroup[39m: "main"
+    [35mcontainerName[39m: "nanoclaw-main-1772985861916"
+    [35mmountCount[39m: 5
+    [35misMain[39m: true
+[16:04:21.932] [32mINFO[39m (3292): [36mOwn LID session created successfully[39m
+    [35mmyPN[39m: "13125200435:32@s.whatsapp.net"
+    [35mmyLID[39m: "173735772483835:32@lid"
+[16:04:22.783] [31mERROR[39m (3292): [36mContainer exited with error[39m
+    [35mgroup[39m: "main"
+    [35mcode[39m: 125
+    [35mduration[39m: 869
+    [35mstderr[39m: "Unable to find image 'nanoclaw-agent:latest' locally\ndocker: Error response from daemon: failed to resolve reference \"docker.io/library/nanoclaw-agent:latest\": docker.io/library/nanoclaw-agent:latest: not found\n\nRun 'docker run --help' for more information\n"
+    [35mstdout[39m: ""
+    [35mlogFile[39m: "/home/anieshchawla/nanoclaw-main/groups/main/logs/container-2026-03-08T16-04-22-783Z.log"
+[16:04:22.784] [31mERROR[39m (3292): [36mContainer agent error[39m
+    [35mgroup[39m: "main"
+    error: "Container exited with code 125: er: Error response from daemon: failed to resolve reference \"docker.io/library/nanoclaw-agent:latest\": docker.io/library/nanoclaw-agent:latest: not found\n\nRun 'docker run --help' for more information\n"
+[16:04:22.810] [33mWARN[39m (3292): [36mAgent error, rolled back message cursor for retry[39m
+    [35mgroup[39m: "main"
+[16:04:22.810] [32mINFO[39m (3292): [36mScheduling retry with backoff[39m
+    [35mgroupJid[39m: "13125200435@s.whatsapp.net"
+    [35mretryCount[39m: 1
+    [35mdelayMs[39m: 5000
+[16:04:27.833] [32mINFO[39m (3292): [36mProcessing messages[39m
+    [35mgroup[39m: "main"
+    [35mmessageCount[39m: 1
+[16:04:27.837] [32mINFO[39m (3292): [36mSpawning container agent[39m
+    [35mgroup[39m: "main"
+    [35mcontainerName[39m: "nanoclaw-main-1772985867837"
+    [35mmountCount[39m: 5
+    [35misMain[39m: true
+[16:04:28.684] [31mERROR[39m (3292): [36mContainer exited with error[39m
+    [35mgroup[39m: "main"
+    [35mcode[39m: 125
+    [35mduration[39m: 848
+    [35mstderr[39m: "Unable to find image 'nanoclaw-agent:latest' locally\ndocker: Error response from daemon: failed to resolve reference \"docker.io/library/nanoclaw-agent:latest\": docker.io/library/nanoclaw-agent:latest: not found\n\nRun 'docker run --help' for more information\n"
+    [35mstdout[39m: ""
+    [35mlogFile[39m: "/home/anieshchawla/nanoclaw-main/groups/main/logs/container-2026-03-08T16-04-28-684Z.log"
+[16:04:28.685] [31mERROR[39m (3292): [36mContainer agent error[39m
+    [35mgroup[39m: "main"
+    error: "Container exited with code 125: er: Error response from daemon: failed to resolve reference \"docker.io/library/nanoclaw-agent:latest\": docker.io/library/nanoclaw-agent:latest: not found\n\nRun 'docker run --help' for more information\n"
+[16:04:28.704] [33mWARN[39m (3292): [36mAgent error, rolled back message cursor for retry[39m
+    [35mgroup[39m: "main"
+[16:04:28.704] [32mINFO[39m (3292): [36mScheduling retry with backoff[39m
+    [35mgroupJid[39m: "13125200435@s.whatsapp.net"
+    [35mretryCount[39m: 2
+    [35mdelayMs[39m: 10000
+[16:04:29.602] [32mINFO[39m (3292): [36mShutdown signal received[39m
+    [35msignal[39m: "SIGTERM"
+[16:04:29.602] [32mINFO[39m (3292): [36mGroupQueue shutting down (containers detached, not killed)[39m
+    [35mactiveCount[39m: 0
+    [35mdetachedContainers[39m: []
+[16:04:29.602] [32mINFO[39m (3292): [36mconnection closed[39m
+[16:04:29.603] [32mINFO[39m (3292): [36mConnection closed[39m
+    [35mshouldReconnect[39m: true
+    [35mqueuedMessages[39m: 0
+[16:04:29.603] [32mINFO[39m (3292): [36mReconnecting...[39m
+Exit code: 124
