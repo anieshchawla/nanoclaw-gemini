@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI, Part, Content } from '@google/generative-ai';
-import { execSync } from 'child_process';
+import { execSync, spawn, ChildProcess } from 'child_process';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 interface ContainerInput {
   prompt: string;
@@ -62,34 +64,116 @@ function log(message: string): void {
   console.error(`[agent-runner] ${message}`);
 }
 
-const tools = [
+const nativeTools = [
   {
-    functionDeclarations: [
-      {
-        name: "bash",
-        description: "Run a bash command in the container. Use this for file operations, searching, or running the agent-browser tool. The current working directory is /workspace/group.",
-        parameters: {
-          type: "object",
-          properties: {
-            command: { type: "string", description: "The bash command to run" }
-          },
-          required: ["command"]
-        }
+    name: "bash",
+    description: "Run a bash command in the container. Use this for file operations, searching, or running the agent-browser tool. The current working directory is /workspace/group.",
+    parameters: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "The bash command to run" }
       },
-      {
-        name: "send_message",
-        description: "Send a message to the user immediately. Useful for progress updates during long tasks.",
-        parameters: {
-          type: "object",
-          properties: {
-            text: { type: "string", description: "The message text to send" }
-          },
-          required: ["text"]
-        }
-      }
-    ]
+      required: ["command"]
+    }
+  },
+  {
+    name: "send_message",
+    description: "Send a message to the user immediately. Useful for progress updates during long tasks.",
+    parameters: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "The message text to send" }
+      },
+      required: ["text"]
+    }
   }
 ];
+
+const mcpClients: Record<string, Client> = {};
+const toolToClient: Record<string, Client> = {};
+
+async function setupMcpServers(sdkEnv: Record<string, string | undefined>) {
+  const mcpServers = {
+    nanoclaw: {
+      command: 'node',
+      args: ['/tmp/dist/ipc-mcp-stdio.js']
+    },
+    ollama: {
+      command: 'node',
+      args: ['/tmp/dist/ollama-mcp-stdio.js']
+    }
+  };
+
+  const allTools: any[] = [...nativeTools];
+
+  for (const [serverName, config] of Object.entries(mcpServers)) {
+    try {
+      const transport: StdioClientTransport = new StdioClientTransport({
+        command: config.command,
+        args: config.args,
+        env: sdkEnv as Record<string, string>
+      });
+
+      // Manually handle stderr from the transport process to surface logs
+      // @ts-ignore - accessing private property for logging
+      const cp: ChildProcess = (transport as any).process;
+      if (cp && cp.stderr) {
+        cp.stderr.on('data', (data: Buffer) => {
+          const lines = data.toString().trim().split('\n');
+          for (const line of lines) {
+            if (line) console.error(line);
+          }
+        });
+      }
+
+      const client = new Client({ name: "nanoclaw-client", version: "1.0.0" }, { capabilities: {} });
+      await client.connect(transport);
+      mcpClients[serverName] = client;
+
+      const toolsList = await client.listTools();
+      for (const t of toolsList.tools) {
+        toolToClient[t.name] = client;
+
+        const properties: any = {};
+        const required: string[] = [];
+        
+        if (t.inputSchema && t.inputSchema.properties) {
+          for (const [propName, propDef] of Object.entries(t.inputSchema.properties as Record<string, any>)) {
+            properties[propName] = {
+              type: propDef.type || 'string',
+              description: propDef.description || ''
+            };
+          }
+        }
+        if (t.inputSchema && t.inputSchema.required) {
+          required.push(...(t.inputSchema.required as string[]));
+        }
+
+        const newTool = {
+          name: t.name,
+          description: t.description || '',
+          parameters: {
+            type: "object",
+            properties,
+            required
+          }
+        };
+
+        const existingIdx = allTools.findIndex(x => x.name === t.name);
+        if (existingIdx >= 0) {
+          allTools[existingIdx] = newTool;
+        } else {
+          allTools.push(newTool);
+        }
+      }
+      log(`Registered MCP server: ${serverName} with tools: ${toolsList.tools.map(t => t.name).join(', ')}`);
+    } catch (err) {
+      log(`Failed to start MCP server ${serverName}: ${err}`);
+    }
+  }
+
+  return [{ functionDeclarations: allTools }];
+}
 
 async function handleFunctionCall(name: string, args: any, containerInput: ContainerInput): Promise<any> {
   log(`Executing tool: ${name} with args: ${JSON.stringify(args)}`);
@@ -114,6 +198,24 @@ async function handleFunctionCall(name: string, args: any, containerInput: Conta
     return { status: "sent" };
   }
 
+  const client = toolToClient[name];
+  if (client) {
+    try {
+      log(`Routing tool ${name} to MCP client`);
+      const result = await client.callTool({ name, arguments: args });
+      if (result && Array.isArray(result.content)) {
+        const textContent = result.content.find((c: any) => c.type === 'text');
+        if (textContent) {
+          return { output: textContent.text };
+        }
+      }
+      return result;
+    } catch (err: any) {
+      log(`MCP Tool Error (${name}): ${err.message || String(err)}`);
+      return { error: err.message || String(err) };
+    }
+  }
+
   throw new Error(`Unknown tool: ${name}`);
 }
 
@@ -122,6 +224,7 @@ async function runQuery(
   history: Content[],
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
+  tools: any
 ): Promise<{ history: Content[], closedDuringQuery: boolean }> {
   const apiKey = sdkEnv.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not found');
@@ -152,20 +255,28 @@ async function runQuery(
   let result = await chat.sendMessage(prompt);
   let response = result.response;
   
-  // Tool loop
   while (response.candidates?.[0]?.content?.parts?.some(p => p.functionCall)) {
     const parts = response.candidates[0].content.parts;
     const functionResponses: any[] = [];
 
     for (const part of parts) {
       if (part.functionCall) {
-        const toolResult = await handleFunctionCall(part.functionCall.name, part.functionCall.args, containerInput);
-        functionResponses.push({
-          functionResponse: {
-            name: part.functionCall.name,
-            response: toolResult
-          }
-        });
+        try {
+          const toolResult = await handleFunctionCall(part.functionCall.name, part.functionCall.args, containerInput);
+          functionResponses.push({
+            functionResponse: {
+              name: part.functionCall.name,
+              response: toolResult
+            }
+          });
+        } catch (err: any) {
+          functionResponses.push({
+            functionResponse: {
+              name: part.functionCall.name,
+              response: { error: err.message }
+            }
+          });
+        }
       }
     }
 
@@ -205,13 +316,15 @@ async function main(): Promise<void> {
     sdkEnv[key] = value;
   }
 
+  const tools = await setupMcpServers(sdkEnv);
+
   let history: Content[] = [];
   let prompt = containerInput.prompt;
   
   try {
-    const queryResult = await runQuery(prompt, history, containerInput, sdkEnv);
-    // For now we just run once and exit to avoid complexity with IPC wait in this version
-    // NanoClaw will spawn a new container for the next message anyway
+    const queryResult = await runQuery(prompt, history, containerInput, sdkEnv, tools);
+    log(`Query complete. Exiting.`);
+    process.exit(0);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);

@@ -176,11 +176,14 @@ function buildVolumeMounts(
  * Secrets are never written to disk or mounted as files.
  */
 function readSecrets(): Record<string, string> {
-  return readEnvFile(['GEMINI_API_KEY']);
+  return readEnvFile(['GEMINI_API_KEY', 'OLLAMA_HOST']);
 }
 
 function buildContainerArgs(mounts: VolumeMount[], containerName: string): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
+
+  // Allow Linux containers to reach the host's services (like Ollama)
+  args.push('--add-host=host.docker.internal:host-gateway');
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
@@ -330,7 +333,13 @@ export async function runContainerAgent(
       const chunk = data.toString();
       const lines = chunk.trim().split('\n');
       for (const line of lines) {
-        if (line) logger.debug({ container: group.folder }, line);
+        if (line) {
+          if (line.includes('[OLLAMA]')) {
+            logger.info({ group: group.name }, line);
+          } else {
+            logger.debug({ container: group.folder }, line);
+          }
+        }
       }
       // Don't reset timeout on stderr — SDK writes debug logs continuously.
       // Timeout only resets on actual output (OUTPUT_MARKER in stdout).

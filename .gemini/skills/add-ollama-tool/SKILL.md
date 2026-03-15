@@ -48,14 +48,14 @@ git remote -v
 If `upstream` is missing, add it:
 
 ```bash
-git remote add upstream https://github.com/qwibitai/nanoclaw.git
+git remote add upstream https://github.com/anieshchawla/nanoclaw-gemini.git 
 ```
 
 ### Merge the skill branch
 
 ```bash
-git fetch upstream skill/ollama-tool
-git merge upstream/skill/ollama-tool
+git fetch upstream skills/ollama-tool
+git merge upstream skills/ollama-tool
 ```
 
 This merges in:
