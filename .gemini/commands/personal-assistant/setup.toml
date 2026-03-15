@@ -1,0 +1,2 @@
+description = "Runs the NanoClaw setup script"
+prompt = """!{./setup.sh}"""

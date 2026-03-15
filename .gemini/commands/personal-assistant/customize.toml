@@ -1,0 +1,4 @@
+description = "Adds channels, integrations, or changes behavior for NanoClaw"
+prompt = """The user wants to customize NanoClaw. Their instruction is: {{args}}
+
+As the agent, evaluate this instruction and take appropriate actions using available tools to fulfill the customization request. If clarification is needed, ask the user."""

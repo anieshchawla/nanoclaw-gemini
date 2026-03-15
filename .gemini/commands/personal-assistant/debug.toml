@@ -1,0 +1,2 @@
+description = "Troubleshoots container issues, reviews logs, or helps with debugging NanoClaw"
+prompt = """This command is for debugging and troubleshooting NanoClaw. Specific actions for container issues, log review, or other diagnostics can be defined here."""

@@ -1,0 +1,2 @@
+description = "Pulls upstream NanoClaw changes, merges customizations, and runs migrations"
+prompt = """This command is for updating NanoClaw. It typically involves pulling upstream changes, merging with local customizations, and running necessary migrations."""

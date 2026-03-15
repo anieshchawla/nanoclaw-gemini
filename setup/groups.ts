@@ -80,7 +80,6 @@ async function syncGroups(projectRoot: string): Promise<void> {
     process.exit(1);
   }
 
-  // Run inline sync script via node
   logger.info('Fetching group metadata');
   let syncOk = false;
   try {
@@ -117,7 +116,7 @@ const sock = makeWASocket({
   auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
   printQRInTerminal: false,
   logger,
-  browser: Browsers.macOS('Chrome'),
+  browser: Browsers.ubuntu('Chrome'),
 });
 
 const timeout = setTimeout(() => {
@@ -139,7 +138,7 @@ sock.ev.on('connection.update', async (update) => {
           count++;
         }
       }
-      console.log('SYNCED:' + count);
+      process.stdout.write('SYNCED:' + count);
     } catch (err) {
       console.error('FETCH_ERROR:' + err.message);
     } finally {
@@ -149,23 +148,38 @@ sock.ev.on('connection.update', async (update) => {
       process.exit(0);
     }
   } else if (update.connection === 'close') {
-    clearTimeout(timeout);
-    console.error('CONNECTION_CLOSED');
-    process.exit(1);
+    if (update.lastDisconnect?.error?.output?.statusCode !== 401) {
+       // Only exit if it's not a normal logout/close
+       clearTimeout(timeout);
+       console.error('CONNECTION_CLOSED');
+       process.exit(1);
+    }
   }
 });
-`;
+`.trim(); // Added trim() to ensure no leading/trailing whitespace issues
 
-    const output = execSync(`node --input-type=module -e ${JSON.stringify(syncScript)}`, {
+    // Use the 'input' option to pass the script to node's stdin
+    const output = execSync(`node --input-type=module -`, {
       cwd: projectRoot,
       encoding: 'utf-8',
       timeout: 45000,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      input: syncScript, // This sends the string directly to stdin
+      stdio: ['pipe', 'pipe', 'pipe'], // Changed to pipe for stdin
     });
+
     syncOk = output.includes('SYNCED:');
     logger.info({ output: output.trim() }, 'Sync output');
-  } catch (err) {
-    logger.error({ err }, 'Sync failed');
+  } catch (err: any) {
+    if (err.stdout && err.stdout.includes('SYNCED:')) {
+      syncOk = true;
+      logger.info({ output: err.stdout.trim() }, 'Sync output (from failed command)');
+    } else {
+      logger.error({ 
+        message: err.message, 
+        stderr: err.stderr?.toString(),
+        stdout: err.stdout?.toString() 
+      }, 'Sync failed');
+    }
   }
 
   // Count groups in DB using better-sqlite3 (no sqlite3 CLI)
