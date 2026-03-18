@@ -9,14 +9,14 @@ store/
 data/
 logs/
 
-# Groups - only track base structure and specific CLAUDE.md files
+# Groups - only track base structure and specific GEMINI.md files
 groups/*
 !groups/main/
 !groups/global/
 groups/main/*
 groups/global/*
-!groups/main/CLAUDE.md
-!groups/global/CLAUDE.md
+!groups/main/*.md
+!groups/global/*.md
 
 # Secrets
 *.keys.json
@@ -37,3 +37,6 @@ groups/global/*
 
 agents-sdk-docs
 
+
+.gemini/
+gha-creds-*.json
