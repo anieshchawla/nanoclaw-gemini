@@ -154,10 +154,12 @@ export class GroupQueue {
     const inputDir = path.join(DATA_DIR, 'ipc', state.groupFolder, 'input');
     try {
       fs.mkdirSync(inputDir, { recursive: true });
+      try { fs.chmodSync(inputDir, 0o777); } catch {}
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}.json`;
       const filepath = path.join(inputDir, filename);
       const tempPath = `${filepath}.tmp`;
       fs.writeFileSync(tempPath, JSON.stringify({ type: 'message', text }));
+      try { fs.chmodSync(tempPath, 0o666); } catch {}
       fs.renameSync(tempPath, filepath);
       return true;
     } catch {
@@ -175,7 +177,10 @@ export class GroupQueue {
     const inputDir = path.join(DATA_DIR, 'ipc', state.groupFolder, 'input');
     try {
       fs.mkdirSync(inputDir, { recursive: true });
-      fs.writeFileSync(path.join(inputDir, '_close'), '');
+      try { fs.chmodSync(inputDir, 0o777); } catch {}
+      const closePath = path.join(inputDir, '_close');
+      fs.writeFileSync(closePath, '');
+      try { fs.chmodSync(closePath, 0o666); } catch {}
     } catch {
       // ignore
     }

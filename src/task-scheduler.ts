@@ -3,11 +3,11 @@ import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 
 import {
-  ASSISTANT_NAME,
   IDLE_TIMEOUT,
   MAIN_GROUP_FOLDER,
   SCHEDULER_POLL_INTERVAL,
   TIMEZONE,
+  ASSISTANT_NAME,
 } from './config.js';
 import { ContainerOutput, runContainerAgent, writeTasksSnapshot } from './container-runner.js';
 import {
@@ -22,6 +22,18 @@ import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, ScheduledTask } from './types.js';
+
+/**
+ * Get the effective assistant name for a group.
+ * If the trigger starts with @, use that (minus the @) as the name.
+ * Otherwise fallback to global ASSISTANT_NAME.
+ */
+function getAssistantName(group: RegisteredGroup): string {
+  if (group.trigger.startsWith('@')) {
+    return group.trigger.slice(1);
+  }
+  return ASSISTANT_NAME;
+}
 
 export interface SchedulerDependencies {
   registeredGroups: () => Record<string, RegisteredGroup>;
@@ -134,7 +146,7 @@ async function runTask(
         chatJid: task.chat_jid,
         isMain,
         isScheduledTask: true,
-        assistantName: ASSISTANT_NAME,
+        assistantName: getAssistantName(group),
       },
       (proc, containerName) => deps.onProcess(task.chat_jid, proc, containerName, task.group_folder),
       async (streamedOutput: ContainerOutput) => {

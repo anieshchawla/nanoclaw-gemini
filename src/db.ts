@@ -283,25 +283,27 @@ export function storeMessageDirect(msg: {
 export function getNewMessages(
   jids: string[],
   lastTimestamp: string,
-  botPrefix: string,
+  botPrefix?: string,
 ): { messages: NewMessage[]; newTimestamp: string } {
   if (jids.length === 0) return { messages: [], newTimestamp: lastTimestamp };
 
   const placeholders = jids.map(() => '?').join(',');
-  // Filter bot messages using both the is_bot_message flag AND the content
-  // prefix as a backstop for messages written before the migration ran.
+  // Filter bot messages using the is_bot_message flag.
+  // Prefix filter is an optional backstop for old messages.
   const sql = `
     SELECT id, chat_jid, sender, sender_name, content, timestamp
     FROM messages
     WHERE timestamp > ? AND chat_jid IN (${placeholders})
-      AND is_bot_message = 0 AND content NOT LIKE ?
+      AND is_bot_message = 0
+      ${botPrefix ? 'AND content NOT LIKE ?' : ''}
       AND content != '' AND content IS NOT NULL
     ORDER BY timestamp
   `;
 
-  const rows = db
-    .prepare(sql)
-    .all(lastTimestamp, ...jids, `${botPrefix}:%`) as NewMessage[];
+  const params = [lastTimestamp, ...jids];
+  if (botPrefix) params.push(`${botPrefix}:%`);
+
+  const rows = db.prepare(sql).all(...params) as NewMessage[];
 
   let newTimestamp = lastTimestamp;
   for (const row of rows) {
@@ -314,21 +316,23 @@ export function getNewMessages(
 export function getMessagesSince(
   chatJid: string,
   sinceTimestamp: string,
-  botPrefix: string,
+  botPrefix?: string,
 ): NewMessage[] {
-  // Filter bot messages using both the is_bot_message flag AND the content
-  // prefix as a backstop for messages written before the migration ran.
+  // Filter bot messages using the is_bot_message flag.
+  // Prefix filter is an optional backstop for old messages.
   const sql = `
     SELECT id, chat_jid, sender, sender_name, content, timestamp
     FROM messages
     WHERE chat_jid = ? AND timestamp > ?
-      AND is_bot_message = 0 AND content NOT LIKE ?
+      AND is_bot_message = 0
+      ${botPrefix ? 'AND content NOT LIKE ?' : ''}
       AND content != '' AND content IS NOT NULL
     ORDER BY timestamp
   `;
-  return db
-    .prepare(sql)
-    .all(chatJid, sinceTimestamp, `${botPrefix}:%`) as NewMessage[];
+  const params: any[] = [chatJid, sinceTimestamp];
+  if (botPrefix) params.push(`${botPrefix}:%`);
+
+  return db.prepare(sql).all(...params) as NewMessage[];
 }
 
 export function createTask(

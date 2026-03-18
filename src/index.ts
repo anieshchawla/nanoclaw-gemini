@@ -7,6 +7,7 @@ import {
   MAIN_GROUP_FOLDER,
   POLL_INTERVAL,
   TRIGGER_PATTERN,
+  escapeRegex,
 } from './config.js';
 import { WhatsAppChannel } from './channels/whatsapp.js';
 import {
@@ -125,6 +126,18 @@ export function _setRegisteredGroups(groups: Record<string, RegisteredGroup>): v
 }
 
 /**
+ * Get the effective assistant name for a group.
+ * If the trigger starts with @, use that (minus the @) as the name.
+ * Otherwise fallback to global ASSISTANT_NAME.
+ */
+function getAssistantName(group: RegisteredGroup): string {
+  if (group.trigger.startsWith('@')) {
+    return group.trigger.slice(1);
+  }
+  return ASSISTANT_NAME;
+}
+
+/**
  * Process all pending messages for a group.
  * Called by the GroupQueue when it's this group's turn.
  */
@@ -139,16 +152,18 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
   }
 
   const isMainGroup = group.folder === MAIN_GROUP_FOLDER;
+  const assistantName = getAssistantName(group);
 
   const sinceTimestamp = lastAgentTimestamp[chatJid] || '';
-  const missedMessages = getMessagesSince(chatJid, sinceTimestamp, ASSISTANT_NAME);
+  const missedMessages = getMessagesSince(chatJid, sinceTimestamp, assistantName);
 
   if (missedMessages.length === 0) return true;
 
   // For non-main groups, check if trigger is required and present
   if (!isMainGroup && group.requiresTrigger !== false) {
+    const triggerRegex = new RegExp(`^${escapeRegex(group.trigger)}\\b`, 'i');
     const hasTrigger = missedMessages.some((m) =>
-      TRIGGER_PATTERN.test(m.content.trim()),
+      triggerRegex.test(m.content.trim()),
     );
     if (!hasTrigger) return true;
   }
@@ -280,7 +295,7 @@ async function runAgent(
         groupFolder: group.folder,
         chatJid,
         isMain,
-        assistantName: ASSISTANT_NAME,
+        assistantName: getAssistantName(group),
       },
       (proc, containerName) => queue.registerProcess(chatJid, proc, containerName, group.folder),
       wrappedOnOutput,
@@ -318,7 +333,7 @@ async function startMessageLoop(): Promise<void> {
   while (true) {
     try {
       const jids = Object.keys(registeredGroups);
-      const { messages, newTimestamp } = getNewMessages(jids, lastTimestamp, ASSISTANT_NAME);
+      const { messages, newTimestamp } = getNewMessages(jids, lastTimestamp);
 
       if (messages.length > 0) {
         logger.info({ count: messages.length }, 'New messages');
@@ -355,18 +370,20 @@ async function startMessageLoop(): Promise<void> {
           // Non-trigger messages accumulate in DB and get pulled as
           // context when a trigger eventually arrives.
           if (needsTrigger) {
+            const triggerRegex = new RegExp(`^${escapeRegex(group.trigger)}\\b`, 'i');
             const hasTrigger = groupMessages.some((m) =>
-              TRIGGER_PATTERN.test(m.content.trim()),
+              triggerRegex.test(m.content.trim()),
             );
             if (!hasTrigger) continue;
           }
 
           // Pull all messages since lastAgentTimestamp so non-trigger
           // context that accumulated between triggers is included.
+          const assistantName = getAssistantName(group);
           const allPending = getMessagesSince(
             chatJid,
             lastAgentTimestamp[chatJid] || '',
-            ASSISTANT_NAME,
+            assistantName,
           );
           const messagesToSend =
             allPending.length > 0 ? allPending : groupMessages;
@@ -404,7 +421,8 @@ async function startMessageLoop(): Promise<void> {
 function recoverPendingMessages(): void {
   for (const [chatJid, group] of Object.entries(registeredGroups)) {
     const sinceTimestamp = lastAgentTimestamp[chatJid] || '';
-    const pending = getMessagesSince(chatJid, sinceTimestamp, ASSISTANT_NAME);
+    const assistantName = getAssistantName(group);
+    const pending = getMessagesSince(chatJid, sinceTimestamp, assistantName);
     if (pending.length > 0) {
       logger.info(
         { group: group.name, pendingCount: pending.length },

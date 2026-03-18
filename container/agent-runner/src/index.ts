@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI, Part, Content } from '@google/generative-ai';
-import { execSync } from 'child_process';
+import { execSync, spawn, ChildProcess } from 'child_process';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 interface ContainerInput {
   prompt: string;
@@ -62,34 +64,110 @@ function log(message: string): void {
   console.error(`[agent-runner] ${message}`);
 }
 
-const tools = [
+const nativeTools = [
   {
-    functionDeclarations: [
-      {
-        name: "bash",
-        description: "Run a bash command in the container. Use this for file operations, searching, or running the agent-browser tool. The current working directory is /workspace/group.",
-        parameters: {
-          type: "object",
-          properties: {
-            command: { type: "string", description: "The bash command to run" }
-          },
-          required: ["command"]
-        }
+    name: "bash",
+    description: "Run a bash command in the container. Use this for file operations, searching, or running the agent-browser tool. The current working directory is /workspace/group.",
+    parameters: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "The bash command to run" }
       },
-      {
-        name: "send_message",
-        description: "Send a message to the user immediately. Useful for progress updates during long tasks.",
-        parameters: {
-          type: "object",
-          properties: {
-            text: { type: "string", description: "The message text to send" }
-          },
-          required: ["text"]
-        }
-      }
-    ]
+      required: ["command"]
+    }
   }
 ];
+
+const mcpClients: Record<string, Client> = {};
+const toolToClient: Record<string, Client> = {};
+
+async function setupMcpServers(containerInput: ContainerInput, sdkEnv: Record<string, string | undefined>) {
+  // Pass chat context to MCP servers via environment
+  const mcpEnv = {
+    ...sdkEnv,
+    NANOCLAW_CHAT_JID: containerInput.chatJid,
+    NANOCLAW_GROUP_FOLDER: containerInput.groupFolder,
+    NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
+  };
+
+  const mcpServers = {
+    nanoclaw: {
+      command: 'node',
+      args: ['/tmp/dist/ipc-mcp-stdio.js']
+    }
+    // Ollama explicitly excluded per user request
+  };
+
+  const allTools: any[] = [...nativeTools];
+
+  for (const [serverName, config] of Object.entries(mcpServers)) {
+    try {
+      const transport: StdioClientTransport = new StdioClientTransport({
+        command: config.command,
+        args: config.args,
+        env: mcpEnv as Record<string, string>
+      });
+
+      // Manually handle stderr from the transport process to surface logs
+      // @ts-ignore - accessing private property for logging
+      const cp: ChildProcess = (transport as any).process;
+      if (cp && cp.stderr) {
+        cp.stderr.on('data', (data: Buffer) => {
+          const lines = data.toString().trim().split('\n');
+          for (const line of lines) {
+            if (line) console.error(line);
+          }
+        });
+      }
+
+      const client = new Client({ name: "nanoclaw-client", version: "1.0.0" }, { capabilities: {} });
+      await client.connect(transport);
+      mcpClients[serverName] = client;
+
+      const toolsList = await client.listTools();
+      for (const t of toolsList.tools) {
+        toolToClient[t.name] = client;
+
+        const properties: any = {};
+        const required: string[] = [];
+        
+        if (t.inputSchema && t.inputSchema.properties) {
+          for (const [propName, propDef] of Object.entries(t.inputSchema.properties as Record<string, any>)) {
+            properties[propName] = {
+              type: propDef.type || 'string',
+              description: propDef.description || ''
+            };
+          }
+        }
+        if (t.inputSchema && t.inputSchema.required) {
+          required.push(...(t.inputSchema.required as string[]));
+        }
+
+        const newTool = {
+          name: t.name,
+          description: t.description || '',
+          parameters: {
+            type: "object",
+            properties,
+            required
+          }
+        };
+
+        const existingIdx = allTools.findIndex(x => x.name === t.name);
+        if (existingIdx >= 0) {
+          allTools[existingIdx] = newTool;
+        } else {
+          allTools.push(newTool);
+        }
+      }
+      log(`Registered MCP server: ${serverName} with tools: ${toolsList.tools.map(t => t.name).join(', ')}`);
+    } catch (err) {
+      log(`Failed to start MCP server ${serverName}: ${err}`);
+    }
+  }
+
+  return [{ functionDeclarations: allTools }];
+}
 
 async function handleFunctionCall(name: string, args: any, containerInput: ContainerInput): Promise<any> {
   log(`Executing tool: ${name} with args: ${JSON.stringify(args)}`);
@@ -103,15 +181,22 @@ async function handleFunctionCall(name: string, args: any, containerInput: Conta
     }
   }
   
-  if (name === "send_message") {
-    writeIpcFile(MESSAGES_DIR, {
-      type: 'message',
-      chatJid: containerInput.chatJid,
-      text: args.text,
-      groupFolder: containerInput.groupFolder,
-      timestamp: new Date().toISOString(),
-    });
-    return { status: "sent" };
+  const client = toolToClient[name];
+  if (client) {
+    try {
+      log(`Routing tool ${name} to MCP client`);
+      const result = await client.callTool({ name, arguments: args });
+      if (result && Array.isArray(result.content)) {
+        const textContent = result.content.find((c: any) => c.type === 'text');
+        if (textContent) {
+          return { result: textContent.text };
+        }
+      }
+      return result;
+    } catch (err: any) {
+      log(`MCP Tool Error (${name}): ${err.message || String(err)}`);
+      return { error: err.message || String(err) };
+    }
   }
 
   throw new Error(`Unknown tool: ${name}`);
@@ -122,6 +207,7 @@ async function runQuery(
   history: Content[],
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
+  tools: any
 ): Promise<{ history: Content[], closedDuringQuery: boolean }> {
   const apiKey = sdkEnv.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not found');
@@ -205,13 +291,77 @@ async function main(): Promise<void> {
     sdkEnv[key] = value;
   }
 
-  let history: Content[] = [];
-  let prompt = containerInput.prompt;
-  
   try {
-    const queryResult = await runQuery(prompt, history, containerInput, sdkEnv);
-    // For now we just run once and exit to avoid complexity with IPC wait in this version
-    // NanoClaw will spawn a new container for the next message anyway
+    const tools = await setupMcpServers(containerInput, sdkEnv);
+    let history: Content[] = [];
+    let prompt = containerInput.prompt;
+    let closed = false;
+
+    // Clear input dir on startup
+    if (fs.existsSync(IPC_INPUT_DIR)) {
+      for (const f of fs.readdirSync(IPC_INPUT_DIR)) {
+        if (f.endsWith('.json') || f === '_close') {
+          try { fs.unlinkSync(path.join(IPC_INPUT_DIR, f)); } catch {}
+        }
+      }
+    }
+
+    if (containerInput.groupFolder === 'whatsapp_testing_goog') {
+      while (!closed) {
+        const result = await runQuery(prompt, history, containerInput, sdkEnv, tools);
+        history = result.history;
+        
+        if (result.closedDuringQuery) break;
+
+        log('Query complete. Polling for next input (Testing Goog channel)...');
+        let nextInput: string | null = null;
+        while (!nextInput && !closed) {
+          if (fs.existsSync(IPC_INPUT_CLOSE_SENTINEL)) {
+            log('Received close sentinel.');
+            closed = true;
+            break;
+          }
+
+          const files = fs.existsSync(IPC_INPUT_DIR) ? fs.readdirSync(IPC_INPUT_DIR).filter(f => f.endsWith('.json')) : [];
+          if (files.length > 0) {
+            files.sort(); // Process oldest first
+            const file = files[0];
+            const filePath = path.join(IPC_INPUT_DIR, file);
+            try {
+              const data = fs.readFileSync(filePath, 'utf-8');
+              const msg = JSON.parse(data);
+              if (msg.type === 'message') {
+                nextInput = msg.text;
+                log(`Received next input from ${file}`);
+              }
+              fs.unlinkSync(filePath); // Delete file after processing
+            } catch (err) {
+              log(`Error reading IPC file ${file}: ${err}`);
+              try { fs.unlinkSync(filePath); } catch {}
+            }
+          } else {
+            await new Promise(resolve => setTimeout(resolve, IPC_POLL_MS));
+          }
+        }
+        
+        if (nextInput) {
+          prompt = nextInput;
+        }
+      }
+    } else {
+      await runQuery(prompt, history, containerInput, sdkEnv, tools);
+    }
+
+    // Close MCP clients to allow process to exit
+    for (const client of Object.values(mcpClients)) {
+      try {
+        await client.close();
+      } catch (err) {
+        log(`Error closing MCP client: ${err}`);
+      }
+    }
+    
+    process.exit(0);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     log(`Agent error: ${errorMessage}`);
